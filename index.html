@@ -680,11 +680,11 @@
         </p>
         <div class="hero-meta">
           <div class="meta-item">
-            <span class="meta-value">25</span>
+            <span class="meta-value" id="stat-repos">25</span>
             <span class="meta-label">Repos</span>
           </div>
           <div class="meta-item">
-            <span class="meta-value">201</span>
+            <span class="meta-value" id="stat-stars">201</span>
             <span class="meta-label">Stars</span>
           </div>
           <div class="meta-item">
@@ -834,7 +834,7 @@
     </div>
     <div class="projects-grid" id="projects-grid">
       <!-- machscope -->
-      <a href="https://github.com/sadopc/machscope" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/machscope" target="_blank" class="project-card" data-repo="machscope">
         <div class="project-top">
           <span class="project-name">machscope</span>
           <span class="project-stars">
@@ -849,7 +849,7 @@
         </div>
       </a>
       <!-- rustgresql -->
-      <a href="https://github.com/sadopc/rustgresql" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/rustgresql" target="_blank" class="project-card" data-repo="rustgresql">
         <div class="project-top">
           <span class="project-name">rustgresql</span>
           <span class="project-stars">
@@ -864,7 +864,7 @@
         </div>
       </a>
       <!-- ScreenCapture -->
-      <a href="https://github.com/sadopc/ScreenCapture" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/ScreenCapture" target="_blank" class="project-card" data-repo="ScreenCapture">
         <div class="project-top">
           <span class="project-name">ScreenCapture</span>
           <span class="project-stars">
@@ -879,7 +879,7 @@
         </div>
       </a>
       <!-- gottp -->
-      <a href="https://github.com/sadopc/gottp" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/gottp" target="_blank" class="project-card" data-repo="gottp">
         <div class="project-top">
           <span class="project-name">gottp</span>
           <span class="project-stars">
@@ -894,7 +894,7 @@
         </div>
       </a>
       <!-- unified-db -->
-      <a href="https://github.com/sadopc/unified-db" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/unified-db" target="_blank" class="project-card" data-repo="unified-db">
         <div class="project-top">
           <span class="project-name">unified-db</span>
           <span class="project-stars">
@@ -909,7 +909,7 @@
         </div>
       </a>
       <!-- edaboard -->
-      <a href="https://github.com/sadopc/edaboard" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/edaboard" target="_blank" class="project-card" data-repo="edaboard">
         <div class="project-top">
           <span class="project-name">edaboard</span>
           <span class="project-stars">
@@ -924,7 +924,7 @@
         </div>
       </a>
       <!-- godu -->
-      <a href="https://github.com/sadopc/godu" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/godu" target="_blank" class="project-card" data-repo="godu">
         <div class="project-top">
           <span class="project-name">godu</span>
           <span class="project-stars">
@@ -939,7 +939,7 @@
         </div>
       </a>
       <!-- EdaCam -->
-      <a href="https://github.com/sadopc/EdaCam" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/EdaCam" target="_blank" class="project-card" data-repo="EdaCam">
         <div class="project-top">
           <span class="project-name">EdaCam</span>
           <span class="project-stars">
@@ -954,7 +954,7 @@
         </div>
       </a>
       <!-- NeuralSwift -->
-      <a href="https://github.com/sadopc/NeuralSwift" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/NeuralSwift" target="_blank" class="project-card" data-repo="NeuralSwift">
         <div class="project-top">
           <span class="project-name">NeuralSwift</span>
           <span class="project-stars">
@@ -969,7 +969,7 @@
         </div>
       </a>
       <!-- EdaDB -->
-      <a href="https://github.com/sadopc/EdaDB" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/EdaDB" target="_blank" class="project-card" data-repo="EdaDB">
         <div class="project-top">
           <span class="project-name">EdaDB</span>
           <span class="project-stars">
@@ -984,7 +984,7 @@
         </div>
       </a>
       <!-- trackr -->
-      <a href="https://github.com/sadopc/trackr" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/trackr" target="_blank" class="project-card" data-repo="trackr">
         <div class="project-top">
           <span class="project-name">trackr</span>
           <span class="project-stars">
@@ -999,7 +999,7 @@
         </div>
       </a>
       <!-- tailmon -->
-      <a href="https://github.com/sadopc/tailmon" target="_blank" class="project-card">
+      <a href="https://github.com/sadopc/tailmon" target="_blank" class="project-card" data-repo="tailmon">
         <div class="project-top">
           <span class="project-name">tailmon</span>
           <span class="project-stars">
@@ -1160,6 +1160,37 @@
     card.style.transition = 'opacity 0.5s ease, transform 0.5s ease, border-color 0.3s, background 0.3s, box-shadow 0.3s';
     observer.observe(card);
   });
+})();
+
+// ═══ DYNAMIC GITHUB STATS ═══
+(async function() {
+  try {
+    const res = await fetch('https://api.github.com/users/sadopc/repos?per_page=100');
+    if (!res.ok) return;
+    const repos = await res.json();
+
+    // Update hero stats
+    const repoCount = document.getElementById('stat-repos');
+    const starCount = document.getElementById('stat-stars');
+    const totalStars = repos.reduce((sum, r) => sum + r.stargazers_count, 0);
+    if (repoCount) repoCount.textContent = repos.length;
+    if (starCount) starCount.textContent = totalStars;
+
+    // Update individual project card star counts
+    const starMap = {};
+    repos.forEach(r => { starMap[r.name] = r.stargazers_count; });
+
+    document.querySelectorAll('.project-card[data-repo]').forEach(card => {
+      const repo = card.dataset.repo;
+      if (repo in starMap) {
+        const starEl = card.querySelector('.project-stars');
+        if (starEl) {
+          const svg = starEl.querySelector('svg').outerHTML;
+          starEl.innerHTML = svg + '\n            ' + starMap[repo];
+        }
+      }
+    });
+  } catch (e) {}
 })();
 </script>
 
