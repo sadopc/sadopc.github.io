@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sadopc — systems developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --phosphor: #00ff9d;
+    --phosphor-dim: #00ff9d22;
+    --phosphor-mid: #00ff9d66;
+    --phosphor-glow: #00ff9d15;
+    --bg-deep: #05080a;
+    --bg-card: #0a0f14;
+    --bg-card-hover: #0e151c;
+    --border: #141e28;
+    --border-hover: #1c2a38;
+    --text-primary: #c8d6e0;
+    --text-secondary: #5a7080;
+    --text-muted: #344050;
+    --swift: #F05138;
+    --go: #00ADD8;
+    --rust: #CE422B;
+    --python: #3776AB;
+    --c-lang: #6e7681;
+    --cpp: #f34b7d;
+    --typescript: #3178C6;
+    --ruby: #CC342D;
+    --makefile: #427819;
+    --star: #f0c040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg-deep);
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ═══ MATRIX RAIN CANVAS ═══ */
+  #matrix-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    opacity: 0.04;
+    pointer-events: none;
+  }
+
+  /* ═══ SCANLINE OVERLAY ═══ */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ═══ GRAIN OVERLAY ═══ */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.5;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ═══ HERO SECTION ═══ */
+  .hero {
+    padding: 100px 0 80px;
+    position: relative;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .terminal-prompt {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: fadeSlideIn 0.6s ease forwards 0.2s;
+  }
+
+  .terminal-prompt span {
+    color: var(--phosphor);
+  }
+
+  .hero-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 700;
+    color: var(--phosphor);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 16px;
+    text-shadow: 0 0 40px var(--phosphor-dim), 0 0 80px rgba(0, 255, 157, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-name .typed-text {
+    display: inline;
+  }
+
+  .hero-name .cursor {
+    display: inline-block;
+    width: 3px;
+    height: 0.85em;
+    background: var(--phosphor);
+    margin-left: 4px;
+    vertical-align: baseline;
+    position: relative;
+    top: 0.05em;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .hero-tagline {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 500px;
+    opacity: 0;
+    animation: fadeSlideIn 0.6s ease forwards 0.8s;
+  }
+
+  .hero-tagline strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+    opacity: 0;
+    animation: fadeSlideIn 0.6s ease forwards 1s;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .meta-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .meta-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .hero-status {
+    opacity: 0;
+    animation: fadeSlideIn 0.6s ease forwards 1.2s;
+  }
+
+  .status-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 220px;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--phosphor);
+    box-shadow: 0 0 8px var(--phosphor-mid);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 8px var(--phosphor-mid); }
+    50% { box-shadow: 0 0 16px var(--phosphor); }
+  }
+
+  .status-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--phosphor);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .status-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .status-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    transition: color 0.2s;
+  }
+
+  .status-link:hover { color: var(--phosphor); }
+
+  .status-link svg {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ═══ SECTION HEADERS ═══ */
+  .section {
+    padding: 60px 0;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .section-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--phosphor);
+    opacity: 0.6;
+  }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* ═══ LANGUAGE BAR ═══ */
+  .lang-bar-wrap {
+    margin-bottom: 20px;
+  }
+
+  .lang-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    gap: 2px;
+  }
+
+  .lang-segment {
+    border-radius: 4px;
+    transition: transform 0.2s, filter 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .lang-segment:hover {
+    transform: scaleY(1.6);
+    filter: brightness(1.3);
+    z-index: 2;
+  }
+
+  .lang-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .lang-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .lang-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .lang-count {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  /* ═══ EXPERTISE GRID ═══ */
+  .expertise-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .expertise-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .expertise-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--phosphor), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .expertise-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .expertise-card:hover::before { opacity: 1; }
+
+  .expertise-icon {
+    font-size: 20px;
+    margin-bottom: 12px;
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--phosphor);
+    opacity: 0.7;
+  }
+
+  .expertise-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .expertise-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .expertise-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .expertise-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    background: var(--phosphor-glow);
+    border: 1px solid var(--phosphor-dim);
+    border-radius: 4px;
+    color: var(--phosphor);
+    opacity: 0.7;
+  }
+
+  /* ═══ PROJECT CARDS ═══ */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+  }
+
+  .project-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--phosphor-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .project-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .project-card:hover::after { opacity: 1; }
+
+  .project-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .project-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: color 0.2s;
+  }
+
+  .project-card:hover .project-name { color: var(--phosphor); }
+
+  .project-stars {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--star);
+    flex-shrink: 0;
+  }
+
+  .project-stars svg {
+    width: 14px; height: 14px;
+    fill: var(--star);
+  }
+
+  .project-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    flex: 1;
+    margin-bottom: 16px;
+  }
+
+  .project-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .project-lang {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .project-lang-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .project-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .project-card:hover .project-arrow {
+    color: var(--phosphor);
+    transform: translateX(4px);
+  }
+
+  /* ═══ OTHER PROJECTS ═══ */
+  .other-projects {
+    margin-top: 32px;
+  }
+
+  .other-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+
+  .other-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .other-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .other-item:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+  }
+
+  .other-item-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .other-item-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .other-item:hover .other-item-name { color: var(--phosphor); }
+
+  .other-item-lang {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    padding: 60px 0 40px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .footer-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .footer-text a {
+    color: var(--phosphor);
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .footer-text a:hover { opacity: 1; }
+
+  /* ═══ SCROLL REVEAL ═══ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ═══ ANIMATIONS ═══ */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 768px) {
+    .hero { padding: 60px 0 40px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+    .hero-meta { gap: 16px; }
+    .meta-value { font-size: 22px; }
+    .projects-grid { grid-template-columns: 1fr; }
+    .expertise-grid { grid-template-columns: 1fr; }
+    .other-grid { grid-template-columns: 1fr; }
+    .section { padding: 40px 0; }
+  }
+
+  @media (max-width: 480px) {
+    .hero-meta { flex-wrap: wrap; }
+    .container { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<div class="container">
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <div class="terminal-prompt">
+          <span>~</span> $ whoami
+        </div>
+        <h1 class="hero-name">
+          <span class="typed-text" id="typed-name"></span><span class="cursor"></span>
+        </h1>
+        <p class="hero-tagline">
+          <strong>Systems programmer</strong> building databases, binary analysis tools, native macOS apps, and terminal interfaces — from the metal up.
+        </p>
+        <div class="hero-meta">
+          <div class="meta-item">
+            <span class="meta-value">25</span>
+            <span class="meta-label">Repos</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-value">201</span>
+            <span class="meta-label">Stars</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-value">98</span>
+            <span class="meta-label">This Year</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-value">7</span>
+            <span class="meta-label">Languages</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-status">
+        <div class="status-card">
+          <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span class="status-text">Available for hire</span>
+          </div>
+          <div class="status-links">
+            <a href="https://github.com/sadopc" target="_blank" class="status-link">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              github.com/sadopc
+            </a>
+            <span class="status-link" style="cursor:default;">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.669 11.538a.498.498 0 01-.686.165c-1.879-1.147-4.243-1.407-7.028-.77a.499.499 0 01-.222-.973c3.048-.696 5.662-.397 7.77.892a.5.5 0 01.166.686zm.979-2.178a.624.624 0 01-.858.205c-2.15-1.321-5.428-1.704-7.972-.932a.625.625 0 01-.362-1.194c2.905-.881 6.517-.454 8.986 1.063a.624.624 0 01.206.858z"/></svg>
+              Active since 2022
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LANGUAGES ═══ -->
+  <section class="section reveal">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2 class="section-title">Languages</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="lang-bar-wrap">
+      <div class="lang-bar">
+        <div class="lang-segment" style="flex:6; background:var(--swift);" title="Swift — 6 repos"></div>
+        <div class="lang-segment" style="flex:5; background:var(--go);" title="Go — 5 repos"></div>
+        <div class="lang-segment" style="flex:4; background:var(--rust);" title="Rust — 4 repos"></div>
+        <div class="lang-segment" style="flex:3; background:var(--python);" title="Python — 3 repos"></div>
+        <div class="lang-segment" style="flex:1; background:var(--c-lang);" title="C — 1 repo"></div>
+        <div class="lang-segment" style="flex:1; background:var(--cpp);" title="C++ — 1 repo"></div>
+        <div class="lang-segment" style="flex:1; background:var(--typescript);" title="TypeScript — 1 repo"></div>
+      </div>
+      <div class="lang-legend">
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--swift)"></span>Swift <span class="lang-count">6</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--go)"></span>Go <span class="lang-count">5</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--rust)"></span>Rust <span class="lang-count">4</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--python)"></span>Python <span class="lang-count">3</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--c-lang)"></span>C <span class="lang-count">1</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--cpp)"></span>C++ <span class="lang-count">1</span></span>
+        <span class="lang-legend-item"><span class="lang-dot" style="background:var(--typescript)"></span>TypeScript <span class="lang-count">1</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ EXPERTISE ═══ -->
+  <section class="section reveal">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2 class="section-title">Expertise</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="expertise-grid">
+      <div class="expertise-card">
+        <span class="expertise-icon">db&gt;_</span>
+        <div class="expertise-name">Database Engineering</div>
+        <div class="expertise-desc">Built 5 database systems from scratch — PostgreSQL-compatible RDBMS, GPU-accelerated query engines, in-memory SQL, and storage engines.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">ACID</span>
+          <span class="expertise-tag">MVCC</span>
+          <span class="expertise-tag">WAL</span>
+          <span class="expertise-tag">SQL Parser</span>
+          <span class="expertise-tag">B-Tree</span>
+        </div>
+      </div>
+      <div class="expertise-card">
+        <span class="expertise-icon">0x_</span>
+        <div class="expertise-name">Systems Programming</div>
+        <div class="expertise-desc">Binary analysis, Mach-O parsing, ARM64 disassembly, x86_64→ARM64 dynamic translation, code signature verification, emulator development.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">ARM64</span>
+          <span class="expertise-tag">Mach-O</span>
+          <span class="expertise-tag">Binary Translation</span>
+          <span class="expertise-tag">CHIP-8</span>
+        </div>
+      </div>
+      <div class="expertise-card">
+        <span class="expertise-icon">&#63743;_</span>
+        <div class="expertise-name">macOS Native Development</div>
+        <div class="expertise-desc">6 production SwiftUI apps leveraging ScreenCaptureKit, Metal GPU compute, VideoToolbox hardware encoding, and Apple's unified memory architecture.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">SwiftUI</span>
+          <span class="expertise-tag">Metal</span>
+          <span class="expertise-tag">ScreenCaptureKit</span>
+          <span class="expertise-tag">VideoToolbox</span>
+        </div>
+      </div>
+      <div class="expertise-card">
+        <span class="expertise-icon">$&gt;_</span>
+        <div class="expertise-name">Terminal UI &amp; CLI</div>
+        <div class="expertise-desc">Building rich terminal interfaces with Go and Bubble Tea — API clients, disk analyzers, time trackers, and system monitors with full TUI experiences.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">Bubble Tea</span>
+          <span class="expertise-tag">TUI</span>
+          <span class="expertise-tag">Go</span>
+          <span class="expertise-tag">Treemap</span>
+        </div>
+      </div>
+      <div class="expertise-card">
+        <span class="expertise-icon">gpu&gt;</span>
+        <div class="expertise-name">Low-Level &amp; GPU Computing</div>
+        <div class="expertise-desc">Neural networks with Metal GPU acceleration, GPU-accelerated database queries on Apple Silicon unified memory, hardware video encoding.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">Metal Shaders</span>
+          <span class="expertise-tag">Unified Memory</span>
+          <span class="expertise-tag">Neural Networks</span>
+        </div>
+      </div>
+      <div class="expertise-card">
+        <span class="expertise-icon">mcp&gt;</span>
+        <div class="expertise-name">Developer Tooling</div>
+        <div class="expertise-desc">MCP language servers, API testing clients, system monitoring agents, screen recording tools, and clipboard managers — tools developers actually use.</div>
+        <div class="expertise-tags">
+          <span class="expertise-tag">MCP Server</span>
+          <span class="expertise-tag">ZLS</span>
+          <span class="expertise-tag">REST/gRPC</span>
+          <span class="expertise-tag">WebSocket</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURED PROJECTS ═══ -->
+  <section class="section reveal">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2 class="section-title">Featured Projects</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="projects-grid" id="projects-grid">
+      <!-- machscope -->
+      <a href="https://github.com/sadopc/machscope" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">machscope</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            90
+          </span>
+        </div>
+        <div class="project-desc">All-in-one macOS binary analysis: Mach-O parsing, ARM64 disassembly, code signatures, and debugging.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- rustgresql -->
+      <a href="https://github.com/sadopc/rustgresql" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">rustgresql</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            22
+          </span>
+        </div>
+        <div class="project-desc">PostgreSQL-compatible relational database with ACID compliance, MVCC-based concurrency control, and WAL-backed durability.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--rust)"></span>Rust</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- ScreenCapture -->
+      <a href="https://github.com/sadopc/ScreenCapture" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">ScreenCapture</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            22
+          </span>
+        </div>
+        <div class="project-desc">Native macOS screenshot &amp; annotation tool with full-screen/region capture, annotation tools, and quick export.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- gottp -->
+      <a href="https://github.com/sadopc/gottp" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">gottp</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            17
+          </span>
+        </div>
+        <div class="project-desc">Postman/Insomnia-like TUI API client with REST, GraphQL, gRPC, and WebSocket support. Built with Bubble Tea.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--go)"></span>Go</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- unified-db -->
+      <a href="https://github.com/sadopc/unified-db" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">unified-db</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            14
+          </span>
+        </div>
+        <div class="project-desc">GPU-accelerated SQLite queries on Apple Silicon — exploiting unified memory to skip CPU→GPU data copies entirely.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- edaboard -->
+      <a href="https://github.com/sadopc/edaboard" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">edaboard</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            11
+          </span>
+        </div>
+        <div class="project-desc">Native macOS menubar clipboard manager. Auto-captures clipboard history with instant search and global hotkey access.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- godu -->
+      <a href="https://github.com/sadopc/godu" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">godu</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            10
+          </span>
+        </div>
+        <div class="project-desc">Interactive disk usage analyzer for the terminal. Tree view, treemap visualization, file type breakdown, and safe deletion.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--go)"></span>Go</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- EdaCam -->
+      <a href="https://github.com/sadopc/EdaCam" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">EdaCam</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            4
+          </span>
+        </div>
+        <div class="project-desc">macOS screen recorder with hardware-accelerated encoding via Apple's Media Engine. Multi-display and system audio capture.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- NeuralSwift -->
+      <a href="https://github.com/sadopc/NeuralSwift" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">NeuralSwift</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            3
+          </span>
+        </div>
+        <div class="project-desc">Neural network from scratch in Swift with Metal GPU acceleration. Train on MNIST and visualize activations in real-time.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--swift)"></span>Swift</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- EdaDB -->
+      <a href="https://github.com/sadopc/EdaDB" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">EdaDB</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            2
+          </span>
+        </div>
+        <div class="project-desc">Lightweight, fast database prototype with in-memory SQL engine. Built as a deep-dive into storage engine internals.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--rust)"></span>Rust</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- trackr -->
+      <a href="https://github.com/sadopc/trackr" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">trackr</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            2
+          </span>
+        </div>
+        <div class="project-desc">Terminal-based time tracker with timer, projects, reports, Pomodoro mode, and JSON export. Built with Bubble Tea and SQLite.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--go)"></span>Go</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+      <!-- tailmon -->
+      <a href="https://github.com/sadopc/tailmon" target="_blank" class="project-card">
+        <div class="project-top">
+          <span class="project-name">tailmon</span>
+          <span class="project-stars">
+            <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+            2
+          </span>
+        </div>
+        <div class="project-desc">Real-time system monitoring with agent-server architecture. Cross-platform support with modern web dashboard.</div>
+        <div class="project-footer">
+          <div class="project-lang"><span class="project-lang-dot" style="background:var(--rust)"></span>Rust</div>
+          <span class="project-arrow">&rarr;</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Other projects -->
+    <div class="other-projects">
+      <div class="other-label">Also built</div>
+      <div class="other-grid">
+        <a href="https://github.com/sadopc/alt-rosetta" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--c-lang)"></span>
+          <span class="other-item-name">alt-rosetta</span>
+          <span class="other-item-lang">C</span>
+        </a>
+        <a href="https://github.com/sadopc/mcp-server-zig" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--typescript)"></span>
+          <span class="other-item-name">mcp-server-zig</span>
+          <span class="other-item-lang">TypeScript</span>
+        </a>
+        <a href="https://github.com/sadopc/risp-8" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--rust)"></span>
+          <span class="other-item-name">risp-8</span>
+          <span class="other-item-lang">Rust</span>
+        </a>
+        <a href="https://github.com/sadopc/tinydb" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--cpp)"></span>
+          <span class="other-item-name">tinydb</span>
+          <span class="other-item-lang">C++</span>
+        </a>
+        <a href="https://github.com/sadopc/GOMEMDATABASE" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--go)"></span>
+          <span class="other-item-name">GOMEMDATABASE</span>
+          <span class="other-item-lang">Go</span>
+        </a>
+        <a href="https://github.com/sadopc/ffscreenrec" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--python)"></span>
+          <span class="other-item-name">ffscreenrec</span>
+          <span class="other-item-lang">Python</span>
+        </a>
+        <a href="https://github.com/sadopc/System-Monitor-with-Rust" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--rust)"></span>
+          <span class="other-item-name">System-Monitor-with-Rust</span>
+          <span class="other-item-lang">Rust</span>
+        </a>
+        <a href="https://github.com/sadopc/DATATHONAI-SCS" target="_blank" class="other-item">
+          <span class="other-item-dot" style="background:var(--python)"></span>
+          <span class="other-item-name">DATATHONAI-SCS</span>
+          <span class="other-item-lang">Python</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer reveal">
+    <p class="footer-text">
+      <a href="https://github.com/sadopc" target="_blank">github.com/sadopc</a> &nbsp;&middot;&nbsp; building from the metal up
+    </p>
+  </footer>
+
+</div>
+
+<script>
+// ═══ MATRIX RAIN ═══
+(function() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, columns, drops;
+
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    const fontSize = 14;
+    columns = Math.floor(w / fontSize);
+    drops = Array(columns).fill(1).map(() => Math.random() * -100);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(5, 8, 10, 0.15)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '14px monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(char, i * 14, drops[i] * 14);
+      if (drops[i] * 14 > h && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+
+// ═══ TYPING EFFECT ═══
+(function() {
+  const el = document.getElementById('typed-name');
+  const text = 'sadopc';
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+      setTimeout(type, 120 + Math.random() * 80);
+    }
+  }
+  setTimeout(type, 400);
+})();
+
+// ═══ SCROLL REVEAL ═══
+(function() {
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  reveals.forEach(el => observer.observe(el));
+})();
+
+// ═══ STAGGER PROJECT CARDS ═══
+(function() {
+  const cards = document.querySelectorAll('.project-card, .expertise-card, .other-item');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, idx) => {
+      if (entry.isIntersecting) {
+        entry.target.style.transitionDelay = `${idx * 0.04}s`;
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05 });
+
+  cards.forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(16px)';
+    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease, border-color 0.3s, background 0.3s, box-shadow 0.3s';
+    observer.observe(card);
+  });
+})();
+</script>
+
+</body>
+</html>
